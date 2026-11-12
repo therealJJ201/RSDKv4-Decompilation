@@ -1,0 +1,50 @@
+name: Build Windows (old PC)
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-2022
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: x86,           arch: Win32, triplet: x86-windows-static, config: Release,        extra: "" }
+          - { name: x86-debuginfo, arch: Win32, triplet: x86-windows-static, config: RelWithDebInfo, extra: "" }
+          - { name: x64,           arch: x64,   triplet: x64-windows-static, config: Release,        extra: "" }
+
+    steps:
+      - name: Checkout (with submodules)
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install dependencies
+        run: >
+          & "$env:VCPKG_INSTALLATION_ROOT\vcpkg.exe" install
+          glew sdl2 libogg libvorbis
+          --triplet=${{ matrix.triplet }}
+
+      - name: Configure
+        run: >
+          cmake -B build -A ${{ matrix.arch }}
+          -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake"
+          -DVCPKG_TARGET_TRIPLET=${{ matrix.triplet }}
+          -DCMAKE_PREFIX_PATH="$env:VCPKG_INSTALLATION_ROOT/installed/${{ matrix.triplet }}/"
+          -DCMAKE_POLICY_DEFAULT_CMP0091=NEW
+          -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded
+          ${{ matrix.extra }}
+
+      - name: Build
+        run: cmake --build build --parallel --config ${{ matrix.config }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: RSDKv4-${{ matrix.name }}
+          path: |
+            build/${{ matrix.config }}/RSDKv4.exe
+            build/${{ matrix.config }}/RSDKv4.pdb
+          if-no-files-found: error
