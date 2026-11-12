@@ -35,6 +35,8 @@ jobs:
           -DCMAKE_PREFIX_PATH="$env:VCPKG_INSTALLATION_ROOT/installed/${{ matrix.triplet }}/"
           -DCMAKE_POLICY_DEFAULT_CMP0091=NEW
           -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded
+          -DRETRO_DISABLE_PLUS=Off
+          -DRETRO_NETWORKING=off
           ${{ matrix.extra }}
 
       - name: Build
