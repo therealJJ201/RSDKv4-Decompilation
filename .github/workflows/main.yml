@@ -12,7 +12,7 @@ jobs:
       matrix:
         include:
           - { name: x86,           arch: Win32, triplet: x86-windows-static, config: Release,        extra: "" }
-          - { name: x86-debuginfo, arch: Win32, triplet: x86-windows-static, config: RelWithDebInfo, extra: "" }
+                    - { name: x86-debuginfo, arch: Win32, triplet: x86-windows-static, config: RelWithDebInfo, extra: "-DCMAKE_EXE_LINKER_FLAGS=/MAP" }
           - { name: x64,           arch: x64,   triplet: x64-windows-static, config: Release,        extra: "" }
 
     steps:
@@ -49,4 +49,5 @@ jobs:
           path: |
             build/${{ matrix.config }}/RSDKv4.exe
             build/${{ matrix.config }}/RSDKv4.pdb
+            build/**/RSDKv4.map
           if-no-files-found: error
