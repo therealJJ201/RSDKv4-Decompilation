@@ -206,6 +206,11 @@ int InitRenderDevice()
 
     // Init GL
     Engine.glContext = SDL_GL_CreateContext(Engine.window);
+	if (!Engine.glContext) {
+        PrintLog("ERROR: failed to create OpenGL context!\nerror msg: %s", SDL_GetError());
+        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "RSDKv4", SDL_GetError(), Engine.window);
+        return 0;
+    }
 
     SDL_GL_SetSwapInterval(Engine.vsync ? 1 : 0);
 
@@ -214,9 +219,17 @@ int InitRenderDevice()
     if (err != GLEW_OK && err != GLEW_ERROR_NO_GLX_DISPLAY) {
         PrintLog("glew init error:");
         PrintLog((const char *)glewGetErrorString(err));
+        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "RSDKv4", (const char *)glewGetErrorString(err), Engine.window);
         return false;
     }
 #endif
+
+    {
+        const char *glVer  = (const char *)glGetString(GL_VERSION);
+        const char *glRend = (const char *)glGetString(GL_RENDERER);
+        PrintLog("OpenGL version: %s", glVer ? glVer : "unknown");
+        PrintLog("OpenGL renderer: %s", glRend ? glRend : "unknown");
+    }
 
     displaySettings.unknown2 = 0;
 
