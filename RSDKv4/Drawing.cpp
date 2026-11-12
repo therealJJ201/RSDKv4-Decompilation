@@ -35,6 +35,8 @@ DisplaySettings displaySettings;
 bool convertTo32Bit     = false;
 bool mixFiltersOnJekyll = false;
 
+// false when the GL driver has no usable framebuffer objects (disables the hi-res path)
+bool framebufferSupported = true;
 #if RETRO_USING_OPENGL
 GLint defaultFramebuffer = -1;
 GLuint framebufferHiRes  = -1;
@@ -222,6 +224,16 @@ int InitRenderDevice()
         SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "RSDKv4", (const char *)glewGetErrorString(err), Engine.window);
         return false;
     }
+	// Old GL 2.x drivers (e.g. GeForce 6/7) only provide framebuffers through GL_EXT_framebuffer_object,
+    // which leaves the core glBindFramebuffer & co. as NULL pointers (calling them crashes at address 0).
+    if (!glBindFramebuffer && GLEW_EXT_framebuffer_object) {
+        glGenFramebuffers      = (PFNGLGENFRAMEBUFFERSPROC)glGenFramebuffersEXT;
+        glDeleteFramebuffers   = (PFNGLDELETEFRAMEBUFFERSPROC)glDeleteFramebuffersEXT;
+        glBindFramebuffer      = (PFNGLBINDFRAMEBUFFERPROC)glBindFramebufferEXT;
+        glFramebufferTexture2D = (PFNGLFRAMEBUFFERTEXTURE2DPROC)glFramebufferTexture2DEXT;
+    }
+    framebufferSupported = glGenFramebuffers && glDeleteFramebuffers && glBindFramebuffer && glFramebufferTexture2D;
+    PrintLog("Framebuffer objects supported: %s", framebufferSupported ? "yes" : "no");
 #endif
 
     {
@@ -617,7 +629,7 @@ void SetScreenDimensions(int width, int height)
     glViewport(0, 0, displaySettings.width, displaySettings.height);
 #endif
 
-    Engine.useHighResAssets = displaySettings.height > (SCREEN_YSIZE * 2);
+    Engine.useHighResAssets = framebufferSupported && displaySettings.height > (SCREEN_YSIZE * 2);
     int displayWidth        = aspect * SCREEN_YSIZE;
     // if (val > displaySettings.maxWidth)
     //    val = displaySettings.maxWidth;
@@ -773,7 +785,7 @@ void SetupViewport()
     SetScreenSize(displayWidth, (displayWidth + 9) & -0x10);
 #endif
 
-    Engine.useHighResAssets = displaySettings.height > (SCREEN_YSIZE * 2);
+    Engine.useHighResAssets = framebufferSupported && displaySettings.height > (SCREEN_YSIZE * 2);
 
 #if RETRO_USING_OPENGL
     glMatrixMode(GL_MODELVIEW);
@@ -906,7 +918,8 @@ void SetupViewport()
             glDeleteFramebuffers(1, &framebufferHiRes);
         if (renderbufferHiRes != -1)
             glDeleteTextures(1, &renderbufferHiRes);
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        if (framebufferSupported)
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
         framebufferHiRes  = -1;
         renderbufferHiRes = -1;
