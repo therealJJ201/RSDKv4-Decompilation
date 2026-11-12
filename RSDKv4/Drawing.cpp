@@ -75,6 +75,7 @@ int InitRenderDevice()
     flags |= SDL_WINDOW_OPENGL;
 
 #if RETRO_PLATFORM != RETRO_OSX // dude idk either you just gotta trust that this works
+#if RETRO_PLATFORM != RETRO_WIN
 #if RETRO_PLATFORM != RETRO_ANDROID
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 #else
@@ -82,6 +83,7 @@ int InitRenderDevice()
 #endif
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 1);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+#endif
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 16);
 #endif
